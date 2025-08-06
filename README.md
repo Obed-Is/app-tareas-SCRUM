@@ -6,7 +6,7 @@ Guia de instalacion y ejecucion del proyecto
 Clonen el proyecto de github
 
 ```bash
-  git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY
+  git clone https://github.com/Obed-Is/app-tareas-SCRUM.git
 ```
 
 - Luego ejecuten el script de la base de datos (MySql)
