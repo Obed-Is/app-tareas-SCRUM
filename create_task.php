@@ -12,11 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $titulo = $_POST['titulo'];
     $descripcion = $_POST['descripcion'];
     $prioridad = $_POST['prioridad'];
-    $fecha_final = $_POST['fecha_final'];
-    
-    $stmt = $pdo->prepare("INSERT INTO tareas (titulo, descripcion, prioridad, fecha_final, usuario_fk) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$titulo, $descripcion, $prioridad, $fecha_final, $_SESSION['user_id']]);
-    
+    $fecha_vencimiento = $_POST['fecha_vencimiento'];
+    $usuario_fk = $_SESSION['user_id'];
+
+    $fecha_final = !empty($fecha_vencimiento) ? $fecha_vencimiento . ' 23:59:59' : null;
+
+    // Insertar
+    $stmt = $pdo->prepare("INSERT INTO tareas (titulo, descripcion, prioridad, fecha_final, estado, usuario_fk) VALUES (?, ?, ?, ?, 'pendiente', ?)");
+    $stmt->execute([$titulo, $descripcion, $prioridad, $fecha_final, $usuario_fk]);
     header("Location: index.php");
     exit();
 }

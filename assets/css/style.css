@@ -66,9 +66,34 @@ body {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow);
   padding: var(--space-5);
-  /* transition: var(--transition); */
   border: 1px solid var(--border);
+  /* Evitar desbordes */
+  max-width: 100%;
+  overflow: hidden;
+  word-break: break-word;
 }
+
+.task-card h3 {
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Descripción con puntos suspensivos */
+.task-card .text-muted,
+.task-card p {
+  display: -webkit-box;
+  display: box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+}
+
 
 /* Tipografía */
 h1, h2, h3 {
@@ -164,11 +189,23 @@ label {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--space-4);
   margin-top: var(--space-5);
+  align-items: stretch; /* Asegura que todas las tarjetas tengan la misma altura */
 }
 
 .task-card {
   padding: var(--space-4);
   border-left: 3px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* Mantiene la estética y permite que los botones se alineen abajo */
+}
+
+.task-card .buttons {
+  margin-top: auto !important;
+  display: flex;
+  width: 100%;
+  gap: 5px;
 }
 
 .task-card.alta { border-left-color: var(--error); }
@@ -179,6 +216,7 @@ label {
   display: flex;
   gap: var(--space-3);
   margin-top: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .task-meta span {
@@ -187,6 +225,9 @@ label {
   background: var(--background);
   border-radius: var(--radius-sm);
   color: var(--text-light);
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 /* Utilities */
@@ -203,6 +244,120 @@ label {
 .mt-4 { margin-top: var(--space-4); }
 .mt-5 { margin-top: var(--space-5); }
 
+/* Botones con hover reveal */
+.buttons {
+  display: flex;
+  width: 100%;
+  gap: 5px;
+}
+.card .buttons .btn {
+  flex: 1;
+  background: var(--primary);
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: flex 0.3s ease, background 0.3s, color 0.3s;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+  min-width: 0;
+}
+.card .buttons .btn span.text {
+  display: none;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+.card .buttons .btn:hover {
+  flex: 3;
+  background: var(--primary-hover);
+}
+.card .buttons .btn:hover span.text {
+  display: inline;
+}
+.card .buttons .btn:not(:hover) {
+  flex: 0.7;
+}
+.card .buttons .btn:not(:hover) span.text {
+  display: none;
+}
+.card .buttons .btn:not(:hover) {
+  opacity: 1;
+  pointer-events: auto;
+  width: auto;
+  margin: 0;
+  padding: 0 var(--space-2);
+  overflow: hidden;
+  transition: flex 0.3s ease;
+}
+/* No afectar los botones outline fuera de las tarjetas */
+.btn-outline {
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  flex: unset !important;
+  height: auto !important;
+  min-width: 0 !important;
+  padding: var(--space-3) var(--space-5) !important;
+  transition: var(--transition);
+}
+.btn-outline:hover {
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+  background: transparent !important;
+}
+
+a{
+  text-decoration: none;
+}
+
+/* Badge de estado */
+.status-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  max-width: 140px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+/* Estilos de prioridad */
+.prioridad-badge {
+  font-weight: 600;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+.prioridad-badge.alta {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c; /* rojo oscuro, legible */
+}
+.prioridad-badge.media {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309; /* naranja oscuro, legible */
+}
+.prioridad-badge.baja {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857; /* verde oscuro, legible */
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .task-grid {
@@ -213,5 +368,13 @@ label {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-3);
+  }
+  .card {
+    max-width: 100vw;
+  }
+  .task-card h3,
+  .task-card .text-muted,
+  .task-meta span {
+    max-width: 100vw;
   }
 }

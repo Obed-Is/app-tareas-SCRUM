@@ -80,6 +80,28 @@ if (!empty($notificaciones) || !empty($vencidas)) {
             margin-bottom: var(--space-3);
             color: var(--text-light);
         }
+        .buttons {
+            display: flex;
+            gap: var(--space-2);
+        }
+        .btn {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        .btn .icon {
+            margin-right: var(--space-1);
+        }
     </style>
 </head>
 <body>
@@ -139,19 +161,23 @@ if (!empty($notificaciones) || !empty($vencidas)) {
                                 Venció el <?php echo date('d/m/Y', strtotime($tarea['fecha_final'])); ?>
                             </div>
                             
-                            <div class="flex" style="gap: var(--space-2); margin-top: var(--space-4);">
-                                <a href="edit_task.php?id=<?php echo $tarea['id']; ?>" class="btn btn-outline" style="flex: 1;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right: var(--space-1);">
-                                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke-width="2"/>
-                                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke-width="2"/>
-                                    </svg>
-                                    Reagendar
+                            <div class="buttons" style="margin-top: var(--space-4);">
+                                <a href="edit_task.php?id=<?php echo $tarea['id']; ?>" class="btn" title="Reagendar">
+                                    <span class="icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke-width="2"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke-width="2"/>
+                                        </svg>
+                                    </span>
+                                    <span class="text">Reagendar</span>
                                 </a>
-                                <a href="index.php?completar=<?php echo $tarea['id']; ?>" class="btn btn-outline" style="flex: 1;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right: var(--space-1);">
-                                        <path d="M20 6L9 17l-5-5" stroke-width="2"/>
-                                    </svg>
-                                    Completar
+                                <a href="index.php?completar=<?php echo $tarea['id']; ?>" class="btn" title="Completar">
+                                    <span class="icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M20 6L9 17l-5-5" stroke-width="2"/>
+                                        </svg>
+                                    </span>
+                                    <span class="text">Completar</span>
                                 </a>
                             </div>
                         </div>
@@ -205,19 +231,23 @@ if (!empty($notificaciones) || !empty($vencidas)) {
                                 (<?php echo date('d/m/Y', strtotime($tarea['fecha_final'])); ?>)
                             </div>
                             
-                            <div class="flex" style="gap: var(--space-2); margin-top: var(--space-4);">
-                                <a href="edit_task.php?id=<?php echo $tarea['id']; ?>" class="btn btn-outline" style="flex: 1;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right: var(--space-1);">
-                                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke-width="2"/>
-                                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke-width="2"/>
-                                    </svg>
-                                    Editar
+                            <div class="buttons" style="margin-top: var(--space-4);">
+                                <a href="edit_task.php?id=<?php echo $tarea['id']; ?>" class="btn" title="Editar">
+                                    <span class="icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke-width="2"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke-width="2"/>
+                                        </svg>
+                                    </span>
+                                    <span class="text">Editar</span>
                                 </a>
-                                <a href="index.php?completar=<?php echo $tarea['id']; ?>" class="btn btn-outline" style="flex: 1;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right: var(--space-1);">
-                                        <path d="M20 6L9 17l-5-5" stroke-width="2"/>
-                                    </svg>
-                                    Completar
+                                <a href="index.php?completar=<?php echo $tarea['id']; ?>" class="btn" title="Completar">
+                                    <span class="icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M20 6L9 17l-5-5" stroke-width="2"/>
+                                        </svg>
+                                    </span>
+                                    <span class="text">Completar</span>
                                 </a>
                             </div>
                         </div>
