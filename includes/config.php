@@ -8,7 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
 $host = 'localhost';
 $dbname = 'todoapp';
 $username = 'root';
-$password = '';
+$password = 'confirmar';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
