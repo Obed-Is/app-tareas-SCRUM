@@ -97,7 +97,8 @@ if (isset($_GET['eliminar'])) {
                         class="card task-card <?php echo $tarea['prioridad']; ?> <?php echo $tarea['estado'] === 'completada' ? 'completada' : ''; ?>">
                         <div class="flex" style="justify-content: space-between; align-items: center;">
                             <h3 style="max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                <?php echo htmlspecialchars($tarea['titulo']); ?></h3>
+                                <?php echo htmlspecialchars($tarea['titulo']); ?>
+                            </h3>
                             <span
                                 class="status-badge <?php echo $tarea['estado'] === 'completada' ? 'completada' : 'pendiente'; ?>"
                                 style="min-width: 120px; text-align: center; display: flex; align-items: center; justify-content: center;">
@@ -142,7 +143,7 @@ if (isset($_GET['eliminar'])) {
                             </span>
                         </div>
                         <div class="buttons" style="margin-top: var(--space-4);">
-                            <button type="button" class="btn" title="Info" onclick="showInfoModal(<?php echo htmlspecialchars(json_encode([
+                            <button type="button" class="btn" title="Información" onclick="showInfoModal(<?php echo htmlspecialchars(json_encode([
                                 'titulo' => $tarea['titulo'],
                                 'descripcion' => $tarea['descripcion'],
                                 'prioridad' => $tarea['prioridad'],
@@ -151,13 +152,14 @@ if (isset($_GET['eliminar'])) {
                                 'estado' => $tarea['estado']
                             ])); ?>)">
                                 <span class="icon">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <circle cx="12" cy="12" r="10" stroke-width="2" />
-                                        <path d="M12 16v-4" stroke-width="2" />
-                                        <path d="M12 8h.01" stroke-width="2" />
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="M12 16v-4" />
+                                        <path d="M12 8h.01" />
                                     </svg>
                                 </span>
-                                <span class="text">Info</span>
+                                <span class="text">Información</span>
                             </button>
                             <a href="edit_task.php?id=<?php echo $tarea['id']; ?>" class="btn" title="Editar">
                                 <span class="icon">

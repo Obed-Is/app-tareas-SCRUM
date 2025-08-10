@@ -10,10 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   if (empty($usuario) || empty($correo) || empty($contraseña)) {
     $error = "Todos los campos son obligatorios";
-  } elseif ($contraseña !== $confirmar_contraseña) {
-    $error = "Las contraseñas no coinciden";
-  } elseif (strlen($contraseña) < 6) {
-    $error = "La contraseña debe tener al menos 6 caracteres";
   } else {
     if (registrarUsuario($usuario, $correo, $contraseña, $pdo)) {
       header("Location: login.php?registro=exito");
@@ -79,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="card">
       <?php if (isset($error)): ?>
-        <div style="background: #FEE2E2; color: var(--error); padding: var(--space-3); 
+        <div id="errorMsg" style="background: #FEE2E2; color: var(--error); padding: var(--space-3); 
              border-radius: var(--radius-sm); margin-bottom: var(--space-4); 
              display: flex; align-items: center; gap: var(--space-2);">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -89,15 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
       <?php endif; ?>
 
-      <form method="post" id="registerForm">
+      <form method="post" id="registerForm" autocomplete="off">
         <div class="form-group">
           <label for="usuario">Nombre de usuario</label>
           <input type="text" id="usuario" name="usuario" class="input" required>
+          <span id="usuarioMsg" style="font-size:0.8em;color:var(--error);display:none;"></span>
         </div>
 
         <div class="form-group">
           <label for="correo">Correo electrónico</label>
           <input type="email" id="correo" name="correo" class="input" required>
+          <span id="correoMsg" style="font-size:0.8em;color:var(--error);display:none;"></span>
         </div>
 
         <div class="form-group">
@@ -115,9 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="strength-meter">
             <div class="strength-bar" id="strengthBar"></div>
           </div>
-          <p style="font-size: 0.75rem; color: var(--text-light); margin-top: var(--space-1);">
-            Mínimo 6 caracteres
-          </p>
+          <span id="passwordMsg" style="font-size:0.8em;color:var(--error);display:none;"></span>
         </div>
 
         <div class="form-group">
@@ -131,9 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </svg>
             </span>
           </div>
-          <p style="font-size: 0.75rem; color: var(--text-light); margin-top: var(--space-1);">
-            <!-- Mínimo 6 caracteres -->
-          </p>
+          <span id="confirmMsg" style="font-size:0.8em;color:var(--error);display:none;"></span>
         </div>
 
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: var(--space-4);">
@@ -193,16 +187,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
 
-    // Validación del formulario
+    // Validación en tiempo real usuario
+    document.getElementById('usuario').addEventListener('input', function() {
+      const val = this.value.trim();
+      const msg = document.getElementById('usuarioMsg');
+      if (val.length < 3) {
+        msg.textContent = 'El usuario debe tener al menos 3 caracteres';
+        msg.style.display = 'block';
+        this.style.borderColor = 'var(--error)';
+      } else {
+        msg.style.display = 'none';
+        this.style.borderColor = '';
+      }
+    });
+
+    // Validación en tiempo real correo
+    document.getElementById('correo').addEventListener('input', function() {
+      const val = this.value.trim();
+      const msg = document.getElementById('correoMsg');
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!regex.test(val)) {
+        msg.textContent = 'Correo electrónico inválido';
+        msg.style.display = 'block';
+        this.style.borderColor = 'var(--error)';
+      } else {
+        msg.style.display = 'none';
+        this.style.borderColor = '';
+      }
+    });
+
+    // Validación en tiempo real contraseña
+    document.getElementById('password').addEventListener('input', function() {
+      const val = this.value;
+      const msg = document.getElementById('passwordMsg');
+      if (val.length < 6) {
+        msg.textContent = 'La contraseña debe tener al menos 6 caracteres';
+        msg.style.display = 'block';
+        this.style.borderColor = 'var(--error)';
+      } else {
+        msg.style.display = 'none';
+        this.style.borderColor = '';
+      }
+    });
+
+    // Validación en tiempo real confirmación
+    document.getElementById('confirm_password').addEventListener('input', function() {
+      const val = this.value;
+      const pass = document.getElementById('password').value;
+      const msg = document.getElementById('confirmMsg');
+      if (val !== pass) {
+        msg.textContent = 'Las contraseñas no coinciden';
+        msg.style.display = 'block';
+        this.style.borderColor = 'var(--error)';
+      } else {
+        msg.style.display = 'none';
+        this.style.borderColor = '';
+      }
+    });
+
+    // Ocultar error general al escribir en cualquier campo
+    ['usuario', 'correo', 'password', 'confirm_password'].forEach(function(id) {
+      document.getElementById(id).addEventListener('input', function() {
+        var errorDiv = document.getElementById('errorMsg');
+        if (errorDiv) errorDiv.style.display = 'none';
+      });
+    });
+
+    // Validación final en submit
     document.getElementById('registerForm').addEventListener('submit', function (e) {
+      let valid = true;
+      const usuario = document.getElementById('usuario');
+      const correo = document.getElementById('correo');
       const password = document.getElementById('password');
       const confirm = document.getElementById('confirm_password');
 
-      if (password.value !== confirm.value) {
-        e.preventDefault();
-        confirm.style.borderColor = 'var(--error)';
-        confirm.nextElementSibling.style.color = 'var(--error)';
+      if (usuario.value.trim().length < 3) {
+        document.getElementById('usuarioMsg').style.display = 'block';
+        usuario.style.borderColor = 'var(--error)';
+        valid = false;
       }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.value.trim())) {
+        document.getElementById('correoMsg').style.display = 'block';
+        correo.style.borderColor = 'var(--error)';
+        valid = false;
+      }
+      if (password.value.length < 6) {
+        document.getElementById('passwordMsg').style.display = 'block';
+        password.style.borderColor = 'var(--error)';
+        valid = false;
+      }
+      if (confirm.value !== password.value) {
+        document.getElementById('confirmMsg').style.display = 'block';
+        confirm.style.borderColor = 'var(--error)';
+        valid = false;
+      }
+      if (!valid) e.preventDefault();
     });
   </script>
 </body>
