@@ -124,6 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="form-group">
           <label for="titulo">Título</label>
           <input type="text" id="titulo" name="titulo" class="input" value="<?php echo htmlspecialchars($tarea['titulo']); ?>" required>
+          <span id="error-titulo" style="color:var(--error);font-size:0.85em;display:none;margin-top:4px;"></span>
         </div>
         
         <div class="form-group">
@@ -169,6 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label for="fecha_vencimiento">Fecha vencimiento</label>
             <input type="date" id="fecha_vencimiento" name="fecha_vencimiento" class="input"
               value="<?php echo $tarea['fecha_final'] ? date('Y-m-d', strtotime($tarea['fecha_final'])) : ''; ?>" required>
+            <span id="error-fecha" style="color:var(--error);font-size:0.85em;display:none;margin-top:4px;"></span>
           </div>
         </div>
         
@@ -209,22 +211,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   document.getElementById('editTaskForm').addEventListener('submit', function(e) {
     const titulo = document.getElementById('titulo');
     const fechaVencimiento = document.getElementById('fecha_vencimiento');
-    
+    let valid = true;
+
     if (titulo.value.trim().length < 3) {
       e.preventDefault();
       titulo.style.borderColor = 'var(--error)';
+      document.getElementById('error-titulo').textContent = 'El título debe tener al menos 3 caracteres.';
+      document.getElementById('error-titulo').style.display = 'block';
+      valid = false;
     }
-    
+
     if (!fechaVencimiento.value) {
       e.preventDefault();
       fechaVencimiento.style.borderColor = 'var(--error)';
+      document.getElementById('error-fecha').textContent = 'Debes seleccionar una fecha de vencimiento.';
+      document.getElementById('error-fecha').style.display = 'block';
+      valid = false;
+    }
+    if (!fechaVencimiento.value || new Date(fechaVencimiento.value) < new Date()) {
+      e.preventDefault();
+      fechaVencimiento.style.borderColor = 'var(--error)';
+      document.getElementById('error-fecha').textContent = 'La fecha de vencimiento no puede ser anterior a hoy.';
+      document.getElementById('error-fecha').style.display = 'block';
+      valid = false;
+    }
+
+    if (valid) {
+      document.getElementById('error-titulo').style.display = 'none';
+      document.getElementById('error-fecha').style.display = 'none';
     }
   });
-  
-  // Resetear estilos al corregir
+
+  // Validación en tiempo real título
   document.getElementById('titulo').addEventListener('input', function() {
     if (this.value.trim().length >= 3) {
       this.style.borderColor = '';
+      document.getElementById('error-titulo').style.display = 'none';
+    } else {
+      this.style.borderColor = 'var(--error)';
+      document.getElementById('error-titulo').textContent = 'El título debe tener al menos 3 caracteres.';
+      document.getElementById('error-titulo').style.display = 'block';
+    }
+  });
+
+  // Validación en tiempo real fecha
+  document.getElementById('fecha_vencimiento').addEventListener('input', function() {
+    if (this.value) {
+      this.style.borderColor = '';
+      document.getElementById('error-fecha').style.display = 'none';
+    } else {
+      this.style.borderColor = 'var(--error)';
+      document.getElementById('error-fecha').textContent = 'Debes seleccionar una fecha de vencimiento.';
+      document.getElementById('error-fecha').style.display = 'block';
     }
   });
   
