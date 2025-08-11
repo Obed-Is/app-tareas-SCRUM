@@ -8,7 +8,6 @@ if (!isLoggedIn()) {
 }
 
 
-// Obtener tareas próximas a vencer (próximas 48 horas)
 $stmt = $pdo->prepare("SELECT * FROM tareas 
                       WHERE usuario_fk = ? 
                       AND estado = 'pendiente'
@@ -17,7 +16,6 @@ $stmt = $pdo->prepare("SELECT * FROM tareas
 $stmt->execute([$_SESSION['user_id']]);
 $notificaciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Obtener tareas vencidas
 $stmt = $pdo->prepare("SELECT * FROM tareas 
                       WHERE usuario_fk = ? 
                       AND estado = 'pendiente'
@@ -25,6 +23,14 @@ $stmt = $pdo->prepare("SELECT * FROM tareas
                       ORDER BY fecha_final ASC");
 $stmt->execute([$_SESSION['user_id']]);
 $vencidas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt = $pdo->prepare("SELECT * FROM tareas 
+                      WHERE usuario_fk = ? 
+                      AND estado = 'completada'
+                      AND fecha_final BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 3 DAY)
+                      ORDER BY fecha_final ASC");
+$stmt->execute([$_SESSION['user_id']]);
+$completadas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (isset($_GET['completar'])) {
     $tareaId = $_GET['completar'];
@@ -54,39 +60,6 @@ if (isset($_GET["eliminar"])) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        .notification-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: var(--space-1) var(--space-2);
-            border-radius: var(--radius-sm);
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .badge-warning {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: var(--warning);
-        }
-
-        .badge-danger {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: var(--error);
-        }
-
-        .time-remaining {
-            font-size: 0.875rem;
-            color: var(--text-light);
-            margin-top: var(--space-2);
-        }
-
-        .section-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin: var(--space-5) 0 var(--space-3);
-            padding-bottom: var(--space-2);
-            border-bottom: 1px solid var(--border);
-        }
-
         .empty-state {
             text-align: center;
             padding: var(--space-6) var(--space-4);
@@ -102,7 +75,7 @@ if (isset($_GET["eliminar"])) {
 
         .notificaciones-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 300px));
             gap: 1rem;
             margin-top: 1.5rem;
         }
@@ -262,6 +235,34 @@ if (isset($_GET["eliminar"])) {
             </div>
         <?php else: ?>
             <div class="notificaciones-container">
+
+                <?php if (!empty($completadas)): ?>
+                    <?php foreach ($completadas as $comple): ?>
+
+                        <div class="notificacion-card">
+                            <div class="notificacion-header">
+                                <h3 style="margin-bottom: 7px;"><?php echo $comple["titulo"] ?></h3>
+                            </div>
+                            <div class="spans">
+                                <span style="background-color: #beecb6;">
+                                    ¡La tarea se ha completado!
+                                </span>
+                            </div>
+                            <div class="notificacion-actions">
+                                <a href="notifications.php?eliminar=<?php echo $comple["id"] ?>" class="btn btn-eliminar"
+                                    title="Eliminar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        style="vertical-align: middle; margin-right: 6px;">
+                                        <line x1="18" y1="6" x2="6" y2="18" stroke-width="2" />
+                                        <line x1="6" y1="6" x2="18" y2="18" stroke-width="2" />
+                                    </svg>
+                                    Eliminar
+                                </a>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+
                 <?php if (!empty($vencidas)): ?>
                     <?php foreach ($vencidas as $venc): ?>
 
@@ -270,7 +271,7 @@ if (isset($_GET["eliminar"])) {
                                 <h3 style="margin-bottom: 7px;"><?php echo $venc["titulo"] ?></h3>
                             </div>
                             <div class="spans">
-                                <span>
+                                <span style="background: #e5ee7a;">
                                     Vencio el
                                     <?php echo date('d/m/Y', strtotime($venc["fecha_final"])); ?>
                                 </span>
@@ -336,10 +337,10 @@ if (isset($_GET["eliminar"])) {
                     text: 'Esta acción no se puede deshacer. ¿Seguro que quieres eliminar esta tarea?',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#ef4444', // var(--error)
-                    cancelButtonColor: '#64748b',  // var(--text-light)
-                    background: '#f8fafc',         // var(--background)
-                    color: '#1e293b',              // var(--text)
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    background: '#f8fafc',
+                    color: '#1e293b',
                     confirmButtonText: 'Sí, eliminar',
                     cancelButtonText: 'Cancelar',
                     customClass: {
