@@ -2,238 +2,177 @@
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/router.php';
+if ($_SESSION["confirmacion"] != 1 || !isset($_SESSION["confirmacion"])) { 
+    header("Location: recuperar.php");
+    exit();
+}
 
-// Variables de estado
-$token = $_GET['token'] ?? '';
-$error = '';
-$success = false;
-$show_form = false;
+if ($_SERVER['REQUEST_METHOD'] === "POST") {
+    $contraseña = trim($_POST["password"]) ?? '';
+    $confirmar_contraseña = trim($_POST["confirm_password"]) ?? '';
 
-// Verificar token
-if (!empty($token)) {
-    $stmt = $pdo->prepare("SELECT id, usuario, token_expiracion FROM usuarios WHERE token_recuperacion = ?");
-    $stmt->execute([$token]);
-    $usuario = $stmt->fetch();
-    
-    if (!$usuario) {
-        $error = "El enlace de recuperación es inválido";
-    } elseif (strtotime($usuario['token_expiracion']) < time()) {
-        $error = "El enlace de recuperación ha expirado";
+    if (empty($contraseña) || $contraseña != $confirmar_contraseña) {
+        $error = "Las contraseñas no coinciden";
+    } elseif (!isset($_SESSION["email_recuperacion"])) {
+        $error = "No se encontró correo asociado. Intenta el proceso de recuperación de nuevo.";
     } else {
-        $show_form = true;
-        
-        // Procesar cambio de contraseña
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $password = $_POST['password'] ?? '';
-            $confirm_password = $_POST['confirm_password'] ?? '';
-            
-            if (empty($password) || empty($confirm_password)) {
-                $error = "Ambos campos son obligatorios";
-            } elseif ($password !== $confirm_password) {
-                $error = "Las contraseñas no coinciden";
-            } elseif (strlen($password) < 8) {
-                $error = "La contraseña debe tener al menos 8 caracteres";
-            } else {
-                // Actualizar contraseña
-                $hash = password_hash($password, PASSWORD_BCRYPT);
-                $stmt = $pdo->prepare("UPDATE usuarios SET contraseña = ?, token_recuperacion = NULL, token_expiracion = NULL WHERE id = ?");
-                
-                if ($stmt->execute([$hash, $usuario['id']])) {
-                    $success = true;
-                    $show_form = false;
-                    
-                    // Iniciar sesión automáticamente
-                    $_SESSION['user_id'] = $usuario['id'];
-                    $_SESSION['username'] = $usuario['usuario'];
-                } else {
-                    $error = "Error al actualizar la contraseña. Por favor intenta nuevamente.";
-                }
-            }
+        $contraseña_hasheada = password_hash($contraseña, PASSWORD_BCRYPT);
+        $stmt = $pdo->prepare("UPDATE usuarios SET contraseña = ? WHERE correo = ?");
+        $stmt->execute([$contraseña_hasheada, $_SESSION["email_recuperacion"]]);
+
+        if ($stmt->rowCount() > 0) {
+            unset($_SESSION["email_recuperacion"]);
+            unset($_SESSION["_codigo"]);
+            unset($_SESSION["expiracion_codigo"]);
+
+            $resultPass = true;
         }
     }
-} else {
-    $error = "Enlace de recuperación no proporcionado";
 }
+
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nueva Contraseña | TaskApp</title>
-    <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .password-container {
             position: relative;
         }
+
         .toggle-password {
             position: absolute;
-            right: 10px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: #6c757d;
+            color: var(--text-light);
         }
-        .password-rules {
-            font-size: 0.85rem;
-            color: #6c757d;
-            margin-top: 5px;
+
+        .strength-meter {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: var(--space-2);
+            overflow: hidden;
         }
-        .password-rules ul {
-            padding-left: 20px;
-            margin: 5px 0;
-        }
-        .password-rules .valid {
-            color: #28a745;
-        }
-        .password-rules .invalid {
-            color: #dc3545;
+
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--error);
+            transition: width 0.3s ease, background 0.3s ease;
         }
     </style>
+    <link rel="stylesheet" href="assets/css/style.css">
+
 </head>
+
 <body>
-    <div class="form-container animated fadeIn">
-        <div class="text-center mb-4">
-            <i class="fas fa-lock fa-3x text-primary mb-3"></i>
-            <h2>Nueva Contraseña</h2>
-            <?php if ($show_form): ?>
-                <p class="text-muted">Crea una nueva contraseña para tu cuenta</p>
-            <?php endif; ?>
+    <div class="container" style="max-width: 420px; padding-top: 5rem;">
+        <div style="text-align: center; margin-bottom: var(--space-6);">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="margin-bottom: var(--space-3);">
+                <rect width="40" height="40" rx="8" fill="#2563EB" />
+                <path d="M20 12L12 17V23L20 28L28 23V17L20 12Z" fill="white" />
+                <path d="M20 28V20" stroke="white" stroke-width="2" />
+            </svg>
+            <h1>Nueva contraseña</h1>
         </div>
-        
-        <?php if (!empty($error)): ?>
-            <div class="alert alert-danger animated shake">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    <span><?php echo htmlspecialchars($error); ?></span>
-                </div>
-            </div>
-        <?php endif; ?>
-        
-        <?php if ($success): ?>
-            <div class="alert alert-success animated fadeIn">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-check-circle me-2"></i>
-                    <span>¡Contraseña actualizada correctamente!</span>
-                </div>
-            </div>
-            <div class="text-center mt-4">
-                <a href="index.php" class="btn btn-primary">
-                    <i class="fas fa-tasks me-1"></i> Ir a Mis Tareas
-                </a>
-            </div>
-        <?php elseif ($show_form): ?>
-            <form id="resetForm" method="post" action="reset_password.php?token=<?php echo htmlspecialchars($token); ?>" novalidate>
-                <div class="form-group mb-3 password-container">
-                    <label for="password" class="form-label">
-                        <i class="fas fa-lock me-1"></i> Nueva Contraseña
-                    </label>
-                    <input type="password" id="password" name="password" class="form-control" 
-                           required minlength="8">
-                    <i class="fas fa-eye toggle-password" onclick="togglePassword('password')"></i>
-                    <div class="invalid-feedback">La contraseña debe tener al menos 8 caracteres</div>
-                    
-                    <div class="password-rules mt-2">
-                        <strong>Requisitos:</strong>
-                        <ul>
-                            <li id="rule-length" class="invalid">Mínimo 8 caracteres</li>
-                            <li id="rule-uppercase" class="invalid">Al menos una mayúscula</li>
-                            <li id="rule-number" class="invalid">Al menos un número</li>
-                        </ul>
+
+        <div class="card">
+            <?php if (!isset($resultPass)): ?>
+                <?php if (isset($error)): ?>
+                    <div style="background: #FEE2E2; color: var(--error); padding: var(--space-3); 
+             border-radius: var(--radius-sm); margin-bottom: var(--space-4); 
+             display: flex; align-items: center; gap: var(--space-2);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" />
+                        </svg>
+                        <span><?php echo htmlspecialchars($error); ?></span>
                     </div>
-                </div>
-                
-                <div class="form-group mb-4 password-container">
-                    <label for="confirm_password" class="form-label">
-                        <i class="fas fa-lock me-1"></i> Confirmar Contraseña
-                    </label>
-                    <input type="password" id="confirm_password" name="confirm_password" 
-                           class="form-control" required minlength="8">
-                    <i class="fas fa-eye toggle-password" onclick="togglePassword('confirm_password')"></i>
-                    <div class="invalid-feedback">Las contraseñas deben coincidir</div>
-                </div>
-                
-                <button type="submit" class="btn btn-primary btn-block mb-3">
-                    <i class="fas fa-save me-1"></i> Guardar Contraseña
-                </button>
-            </form>
-        <?php else: ?>
-            <div class="text-center mt-3">
-                <a href="recuperar.php" class="btn btn-primary">
-                    <i class="fas fa-key me-1"></i> Solicitar Nuevo Enlace
+                <?php endif; ?>
+
+                <form method="post" id="registerForm" onsubmit="return verifyPass(event)">
+
+                    <div class="form-group">
+                        <label for="password">Contraseña</label>
+                        <div class="password-container">
+                            <input type="password" id="password" name="password" class="input" required minlength="6">
+                            <span class="toggle-password" onclick="togglePassword('password')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2" />
+                                    <circle cx="12" cy="12" r="3" stroke-width="2" />
+                                </svg>
+                            </span>
+                        </div>
+                        <p style="font-size: 0.75rem; color: var(--text-light); margin-top: var(--space-1);">
+                            Mínimo 6 caracteres
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm_password">Confirmar contraseña</label>
+                        <div class="password-container">
+                            <input type="password" id="confirm_password" name="confirm_password" class="input" required>
+                            <span class="toggle-password" onclick="togglePassword('confirm_password')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2" />
+                                    <circle cx="12" cy="12" r="3" stroke-width="2" />
+                                </svg>
+                            </span>
+                        </div>
+                        <p style="font-size: 0.9rem;" class="error-message text-muted"></p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: var(--space-4);">
+                        Guardar contraseña
+                    </button>
+                </form>
+            <?php else: ?>
+                <h3>La contraseña se actualizo correctamente</h3>
+                <a href="login.php" class="btn btn-primary" style="width: 100%; margin-top: var(--space-4); text-decoration: none;">Iniciar sesion</a>
+            <?php endif ?>
+        </div>
+
+        <div class="card mt-4" style="text-align: center; padding: var(--space-4);">
+                <a href="login.php" style="color: var(--primary); text-decoration: none; font-weight: 500;">
+                    Volver al inicio de sesion
                 </a>
-            </div>
-        <?php endif; ?>
+            </p>
+        </div>
     </div>
 
     <script>
-    // Mostrar/ocultar contraseña
-    function togglePassword(fieldId) {
-        const field = document.getElementById(fieldId);
-        const icon = field.nextElementSibling;
-        
-        if (field.type === 'password') {
-            field.type = 'text';
-            icon.classList.replace('fa-eye', 'fa-eye-slash');
-        } else {
-            field.type = 'password';
-            icon.classList.replace('fa-eye-slash', 'fa-eye');
+        // Mostrar/ocultar contraseña
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const icon = field.nextElementSibling.querySelector('svg');
+
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" stroke-width="2"/>';
+            } else {
+                field.type = 'password';
+                icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke-width="2"/>';
+            }
         }
-    }
-    
-    // Validación en tiempo real de la contraseña
-    document.getElementById('password').addEventListener('input', function() {
-        const password = this.value;
-        const lengthValid = password.length >= 8;
-        const upperValid = /[A-Z]/.test(password);
-        const numberValid = /[0-9]/.test(password);
-        
-        // Actualizar reglas visualmente
-        document.getElementById('rule-length').className = lengthValid ? 'valid' : 'invalid';
-        document.getElementById('rule-uppercase').className = upperValid ? 'valid' : 'invalid';
-        document.getElementById('rule-number').className = numberValid ? 'valid' : 'invalid';
-        
-        // Validar campo
-        if (password.length > 0 && password.length < 8) {
-            this.classList.add('is-invalid');
-        } else {
-            this.classList.remove('is-invalid');
+
+        function verifyPass(e) {
+            const pass1 = e.target[0].value;
+            const pass2 = e.target[1].value;
+
+            if (pass1 !== pass2) {
+                e.preventDefault();
+                document.querySelector('.error-message').textContent = "Las contraseñas no coinciden";
+                return;
+            }
         }
-    });
-    
-    // Validación de confirmación de contraseña
-    document.getElementById('confirm_password').addEventListener('input', function() {
-        const password = document.getElementById('password').value;
-        
-        if (this.value !== password) {
-            this.classList.add('is-invalid');
-        } else {
-            this.classList.remove('is-invalid');
-        }
-    });
-    
-    // Validación del formulario
-    document.getElementById('resetForm').addEventListener('submit', function(e) {
-        const password = document.getElementById('password');
-        const confirm = document.getElementById('confirm_password');
-        let valid = true;
-        
-        if (password.value.length < 8) {
-            password.classList.add('is-invalid');
-            valid = false;
-        }
-        
-        if (confirm.value !== password.value) {
-            confirm.classList.add('is-invalid');
-            valid = false;
-        }
-        
-        if (!valid) {
-            e.preventDefault();
-        }
-    });
     </script>
 </body>
+
 </html>
