@@ -73,6 +73,7 @@ if (isset($_GET["eliminar"])) {
             color: var(--text-light);
         }
 
+
         .notificaciones-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 300px));
@@ -205,6 +206,29 @@ if (isset($_GET["eliminar"])) {
 
         .btn-eliminar:hover {
             background: #dc2626;
+
+        .buttons {
+            display: flex;
+            gap: var(--space-2);
+        }
+        .btn {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-3);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        .btn .icon {
+            margin-right: var(--space-1);
+
         }
     </style>
 </head>
@@ -285,6 +309,7 @@ if (isset($_GET["eliminar"])) {
                                         <line x1="6" y1="6" x2="18" y2="18" stroke-width="2" />
                                     </svg>
                                     Eliminar
+
                                 </a>
                             </div>
                         </div>
