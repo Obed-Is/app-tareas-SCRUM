@@ -1,36 +1,83 @@
 <?php
 require 'includes/config.php';
 require 'includes/auth.php';
-require_once __DIR__ . '/includes/router.php';
+redirectIfNotLoggedIn();
 
-if (!isLoggedIn()) {
-    header("Location: login.php");
-    exit();
-}
+$errors = [];
+$titulo = '';
+$descripcion = '';
+$prioridad = 'media';
+$fecha_final = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $titulo = $_POST['titulo'];
-    $descripcion = $_POST['descripcion'];
-    $prioridad = $_POST['prioridad'];
-    $fecha_final = $_POST['fecha_final'];
-    
-    $stmt = $pdo->prepare("INSERT INTO tareas (titulo, descripcion, prioridad, fecha_final, usuario_fk) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$titulo, $descripcion, $prioridad, $fecha_final, $_SESSION['user_id']]);
-    
-    header("Location: index.php");
-    exit();
+    $titulo = trim($_POST['titulo'] ?? '');
+    $descripcion = trim($_POST['descripcion'] ?? '');
+    $prioridad = $_POST['prioridad'] ?? 'media';
+    $fecha_final = $_POST['fecha_final'] ?? '';
+
+    // Validar título
+    if (strlen($titulo) < 3) {
+        $errors['titulo'] = "El título debe tener al menos 3 caracteres";
+    }
+
+    // Validar fecha
+    if (empty($fecha_final)) {
+        $errors['fecha_final'] = "La fecha de vencimiento es obligatoria";
+    } else {
+        $d = DateTime::createFromFormat('Y-m-d', $fecha_final);
+        if (!($d && $d->format('Y-m-d') === $fecha_final)) {
+            $errors['fecha_final'] = "La fecha de vencimiento no es válida";
+        }
+    }
+
+    // En la parte donde se crea la tarea exitosamente:
+if (empty($errors)) {
+    try {
+        $stmt = $conn->prepare("INSERT INTO tareas (titulo, descripcion, prioridad, fecha_inicio, fecha_final, usuario_fk) VALUES (?, ?, ?, CURDATE(), ?, ?)");
+        $stmt->execute([$titulo, $descripcion, $prioridad, $fecha_final, $_SESSION['user_id']]);
+        $_SESSION['swal'] = [
+            'icon' => 'success',
+            'title' => '¡Tarea creada!',
+            'text' => 'La tarea ha sido creada exitosamente'
+        ];
+        header("Location: index.php");
+        exit();
+    } catch(PDOException $e) {
+        $errors['general'] = "Error al crear la tarea: " . $e->getMessage();
+    }
+}
+
+    // Validar prioridad
+    $validPrioridades = ['alta', 'media', 'baja'];
+    if (!in_array($prioridad, $validPrioridades)) {
+        $errors['prioridad'] = "Prioridad inválida";
+    }
+
+    if (empty($errors)) {
+        try {
+            $stmt = $conn->prepare("INSERT INTO tareas (titulo, descripcion, prioridad, fecha_inicio, fecha_final, usuario_fk) VALUES (?, ?, ?, CURDATE(), ?, ?)");
+            $stmt->execute([$titulo, $descripcion, $prioridad, $fecha_final, $_SESSION['user_id']]);
+            $_SESSION['success'] = "Tarea creada exitosamente";
+            header("Location: index.php");
+            exit();
+        } catch(PDOException $e) {
+            $errors['general'] = "Error al crear la tarea: " . $e->getMessage();
+        }
+    }
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nueva Tarea | TaskApp</title>
-  <link rel="stylesheet" href="assets/css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
+    /* Prioridades */
     .priority-selector {
       display: flex;
       gap: var(--space-2);
@@ -44,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       border-radius: var(--radius-sm);
       cursor: pointer;
       transition: var(--transition);
+      user-select: none;
     }
     .priority-option:hover {
       border-color: var(--primary);
@@ -74,66 +122,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .priority-dot.alta { background: var(--error); }
     .priority-dot.media { background: var(--warning); }
     .priority-dot.baja { background: var(--success); }
+    .invalid-feedback {
+      color: var(--error);
+      font-size: 0.75rem;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
   <div class="container" style="max-width: 600px;">
-    <header class="app-header">
-      <div>
-        <h1>Nueva Tarea</h1>
-        <p class="text-muted">Organiza tus actividades</p>
-      </div>
-      <a href="index.php" class="btn btn-outline">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right: var(--space-2);">
+    <header class="app-header" style="margin-bottom: var(--space-4);">
+      <h1>Nueva Tarea</h1>
+      <p class="text-muted">Organiza tus actividades</p>
+      <a href="index.php" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M19 12H5M12 19l-7-7 7-7" stroke-width="2"/>
         </svg>
         Volver
       </a>
     </header>
-    
+
     <div class="card">
-      <form method="post" id="taskForm">
+      <?php if (!empty($errors['general'])): ?>
+        <div class="alert alert-error" style="margin-bottom: var(--space-3);">
+          <?php echo htmlspecialchars($errors['general']); ?>
+        </div>
+      <?php endif; ?>
+
+      <form method="post" id="taskForm" novalidate>
         <div class="form-group">
           <label for="titulo">Título de la tarea</label>
-          <input type="text" id="titulo" name="titulo" class="input" placeholder="Ej: Revisar informe mensual" required>
+          <input
+            type="text"
+            id="titulo"
+            name="titulo"
+            class="input <?php echo isset($errors['titulo']) ? 'is-invalid' : ''; ?>"
+            value="<?php echo htmlspecialchars($titulo); ?>"
+            required
+            autofocus
+          />
+          <?php if (isset($errors['titulo'])): ?>
+            <div class="invalid-feedback"><?php echo htmlspecialchars($errors['titulo']); ?></div>
+          <?php endif; ?>
         </div>
-        
+
         <div class="form-group">
           <label for="descripcion">Descripción</label>
-          <textarea id="descripcion" name="descripcion" class="input" rows="4" placeholder="Agrega detalles importantes..."></textarea>
+          <textarea
+            id="descripcion"
+            name="descripcion"
+            class="input"
+            rows="4"
+            placeholder="Agrega detalles importantes..."
+          ><?php echo htmlspecialchars($descripcion); ?></textarea>
         </div>
-        
+
         <div class="form-group">
           <label>Prioridad</label>
-          <div class="priority-selector">
-            <div class="priority-option alta" onclick="selectPriority('alta')">
-              <span class="priority-dot alta"></span>
-              <span>Alta</span>
-              <input type="radio" name="prioridad" value="alta" id="alta" style="display: none;">
-            </div>
-            <div class="priority-option media selected" onclick="selectPriority('media')">
-              <span class="priority-dot media"></span>
-              <span>Media</span>
-              <input type="radio" name="prioridad" value="media" id="media" checked style="display: none;">
-            </div>
-            <div class="priority-option baja" onclick="selectPriority('baja')">
-              <span class="priority-dot baja"></span>
-              <span>Baja</span>
-              <input type="radio" name="prioridad" value="baja" id="baja" style="display: none;">
-            </div>
+          <div class="priority-selector" role="radiogroup" aria-label="Prioridad de la tarea">
+            <?php
+            $prioridades = ['alta' => 'Alta', 'media' => 'Media', 'baja' => 'Baja'];
+            foreach ($prioridades as $key => $label):
+              $selected = $prioridad === $key;
+            ?>
+              <div
+                class="priority-option <?php echo $key . ($selected ? ' selected' : ''); ?>"
+                role="radio"
+                tabindex="0"
+                aria-checked="<?php echo $selected ? 'true' : 'false'; ?>"
+                onclick="selectPriority('<?php echo $key; ?>')"
+                onkeydown="if(event.key==='Enter' || event.key===' ') selectPriority('<?php echo $key; ?>')"
+              >
+                <span class="priority-dot <?php echo $key; ?>"></span>
+                <?php echo $label; ?>
+                <input type="radio" name="prioridad" value="<?php echo $key; ?>" id="prioridad_<?php echo $key; ?>" <?php echo $selected ? 'checked' : ''; ?> style="display:none;" />
+              </div>
+            <?php endforeach; ?>
           </div>
         </div>
-        
+
         <div class="form-group">
-          <label for="fecha_vencimiento">Fecha de vencimiento</label>
-          <input type="date" id="fecha_vencimiento" name="fecha_vencimiento" class="input" required>
+          <label for="fecha_final">Fecha de vencimiento</label>
+          <input
+            type="date"
+            id="fecha_final"
+            name="fecha_final"
+            class="input <?php echo isset($errors['fecha_final']) ? 'is-invalid' : ''; ?>"
+            value="<?php echo htmlspecialchars($fecha_final); ?>"
+            required
+            min="<?php echo date('Y-m-d'); ?>"
+          />
+          <?php if (isset($errors['fecha_final'])): ?>
+            <div class="invalid-feedback"><?php echo htmlspecialchars($errors['fecha_final']); ?></div>
+          <?php endif; ?>
         </div>
-        
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: var(--space-4);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right: var(--space-2);">
-            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke-width="2"/>
-            <path d="M17 21v-8H7v8M7 3v5h8" stroke-width="2"/>
-          </svg>
           Crear Tarea
         </button>
       </form>
@@ -141,40 +224,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 
   <script>
-  // Selector de prioridad interactivo
-  function selectPriority(priority) {
-    document.querySelectorAll('.priority-option').forEach(option => {
-      option.classList.remove('selected');
+    function selectPriority(prio) {
+      const options = document.querySelectorAll('.priority-option');
+      options.forEach(opt => opt.classList.remove('selected'));
+      const selected = document.getElementById('prioridad_' + prio).parentElement;
+      selected.classList.add('selected');
+      document.getElementById('prioridad_' + prio).checked = true;
+    }
+
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      const titulo = document.getElementById('titulo');
+      const fecha = document.getElementById('fecha_final');
+      let isValid = true;
+
+      if (titulo.value.trim().length < 3) {
+        titulo.classList.add('is-invalid');
+        isValid = false;
+      } else {
+        titulo.classList.remove('is-invalid');
+      }
+
+      if (!fecha.value) {
+        fecha.classList.add('is-invalid');
+        isValid = false;
+      } else {
+        fecha.classList.remove('is-invalid');
+      }
+
+      if (!isValid) {
+        e.preventDefault();
+        Swal.fire({
+          icon: 'error',
+          title: 'Error en el formulario',
+          text: 'Por favor corrige los errores marcados',
+          confirmButtonColor: '#2563EB'
+        });
+      }
     });
-    document.querySelector(`.priority-option.${priority}`).classList.add('selected');
-    document.getElementById(priority).checked = true;
-  }
-  
-  // Establecer fecha mínima como hoy
-  document.getElementById('fecha_vencimiento').min = new Date().toISOString().split('T')[0];
-  
-  // Validación del formulario
-  document.getElementById('taskForm').addEventListener('submit', function(e) {
-    const titulo = document.getElementById('titulo');
-    const fecha = document.getElementById('fecha_vencimiento');
-    
-    if (titulo.value.trim().length < 3) {
-      e.preventDefault();
-      titulo.style.borderColor = 'var(--error)';
-    }
-    
-    if (!fecha.value) {
-      e.preventDefault();
-      fecha.style.borderColor = 'var(--error)';
-    }
-  });
-  
-  // Resetear estilos al corregir
-  document.getElementById('titulo').addEventListener('input', function() {
-    if (this.value.trim().length >= 3) {
-      this.style.borderColor = '';
-    }
-  });
+
+    // Quitar error al corregir
+    ['titulo', 'fecha_final'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('input', () => el.classList.remove('is-invalid'));
+      el.addEventListener('change', () => el.classList.remove('is-invalid'));
+    });
   </script>
 </body>
 </html>

@@ -1,16 +1,25 @@
 <?php
 require 'includes/config.php';
 require 'includes/auth.php';
-require_once __DIR__ . '/includes/router.php';
-
-if (!isLoggedIn()) {
-    header("Location: login.php");
-    exit();
-}
+redirectIfNotLoggedIn();
 
 if (isset($_GET['id'])) {
-    $stmt = $pdo->prepare("DELETE FROM tareas WHERE id = ? AND usuario_fk = ?");
-    $stmt->execute([$_GET['id'], $_SESSION['user_id']]);
+    try {
+        $stmt = $conn->prepare("DELETE FROM tareas WHERE id = ? AND usuario_fk = ?");
+        $stmt->execute([$_GET['id'], $_SESSION['user_id']]);
+        
+        $_SESSION['swal'] = [
+            'icon' => 'success',
+            'title' => '¡Tarea eliminada!',
+            'text' => 'La tarea ha sido eliminada correctamente'
+        ];
+    } catch(PDOException $e) {
+        $_SESSION['swal'] = [
+            'icon' => 'error',
+            'title' => 'Error',
+            'text' => 'Error al eliminar la tarea: ' . $e->getMessage()
+        ];
+    }
 }
 
 header("Location: index.php");
