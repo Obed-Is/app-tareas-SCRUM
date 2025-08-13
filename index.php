@@ -7,9 +7,22 @@ if (!isLoggedIn()) {
     exit();
 }
 
-// Obtener tareas del usuario actual
-$stmt = $pdo->prepare("SELECT * FROM tareas WHERE usuario_fk = ? ORDER BY fecha_final ASC");
-$stmt->execute([$_SESSION['user_id']]);
+$search = trim($_GET['search'] ?? '');
+$order = $_GET['order'] ?? 'az';
+
+$orderBy = "titulo ASC";
+if ($order === 'za') {
+    $orderBy = "titulo DESC";
+}
+
+// Obtener tareas del usuario actual con búsqueda y orden
+if ($search !== '') {
+    $stmt = $pdo->prepare("SELECT * FROM tareas WHERE usuario_fk = ? AND titulo LIKE ? ORDER BY $orderBy");
+    $stmt->execute([$_SESSION['user_id'], "%$search%"]);
+} else {
+    $stmt = $pdo->prepare("SELECT * FROM tareas WHERE usuario_fk = ? ORDER BY $orderBy");
+    $stmt->execute([$_SESSION['user_id']]);
+}
 $tareas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Procesar completar tarea
@@ -54,6 +67,31 @@ if (isset($_GET['eliminar'])) {
                 Cerrar Sesión
             </a>
         </header>
+
+        <!-- NUEVO: Barra de búsqueda y filtros -->
+        <form method="get" class="flex" style="gap: var(--space-3); margin-bottom: var(--space-4); align-items: flex-end;">
+            <div>
+                <label for="search" style="font-size:0.9rem;">Buscar tarea</label>
+                <input type="text" id="search" name="search" class="input" placeholder="Buscar por título..." value="<?php echo htmlspecialchars($search); ?>" style="min-width:200px;">
+            </div>
+            <div>
+                <label for="order" style="font-size:0.9rem;">Ordenar</label>
+                <select id="order" name="order" class="input">
+                    <option value="az" <?php if($order==='az') echo 'selected'; ?>>A-Z</option>
+                    <option value="za" <?php if($order==='za') echo 'selected'; ?>>Z-A</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-outline" style="height: 40px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-right: var(--space-2);">
+                    <circle cx="11" cy="11" r="8" stroke-width="2"/>
+                    <path d="M21 21l-4.35-4.35" stroke-width="2"/>
+                </svg>
+                Filtrar
+            </button>
+            <?php if($search !== '' || $order !== 'az'): ?>
+                <a href="index.php" class="btn btn-outline" style="height: 40px;">Limpiar</a>
+            <?php endif; ?>
+        </form>
 
         <div class="flex" style="gap: var(--space-3); margin-bottom: var(--space-4);">
             <a href="create_task.php" class="btn btn-primary">

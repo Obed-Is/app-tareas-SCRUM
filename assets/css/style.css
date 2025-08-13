@@ -189,6 +189,17 @@ label {
   color: var(--text-light);
 }
 
+form.flex > div > label {
+  margin-bottom: 0.25rem;
+  display: block;
+}
+form.flex > div {
+  min-width: 160px;
+}
+form.flex input[type="text"], form.flex select {
+  min-width: 120px;
+}
+
 /* Utilities */
 .flex {
   display: flex;
