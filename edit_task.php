@@ -228,12 +228,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       document.getElementById('error-fecha').style.display = 'block';
       valid = false;
     }
-    if (!fechaVencimiento.value || new Date(fechaVencimiento.value) < new Date()) {
-      e.preventDefault();
-      fechaVencimiento.style.borderColor = 'var(--error)';
-      document.getElementById('error-fecha').textContent = 'La fecha de vencimiento no puede ser anterior a hoy.';
-      document.getElementById('error-fecha').style.display = 'block';
-      valid = false;
+    // Validar contra fecha de inicio de la tarea
+    if (fechaVencimiento.value) {
+      const fechaSeleccionada = new Date(fechaVencimiento.value + 'T00:00:00');
+      const fechaInicio = new Date('<?php echo date('Y-m-d', strtotime($tarea['fecha_inicio'])); ?>T00:00:00');
+      if (fechaSeleccionada < fechaInicio) {
+        e.preventDefault();
+        fechaVencimiento.style.borderColor = 'var(--error)';
+        document.getElementById('error-fecha').textContent = 'La fecha de vencimiento no puede ser anterior a la fecha de inicio de la tarea.';
+        document.getElementById('error-fecha').style.display = 'block';
+        valid = false;
+      }
     }
 
     if (valid) {

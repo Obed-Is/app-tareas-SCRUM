@@ -179,12 +179,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       document.getElementById('error-fecha').style.display = 'block';
       valid = false;
     }
-    if (fecha.value && new Date(fecha.value) < new Date()) {
-      e.preventDefault();
-      fecha.style.borderColor = 'var(--error)';
-      document.getElementById('error-fecha').textContent = 'La fecha de vencimiento no puede ser anterior a hoy.';
-      document.getElementById('error-fecha').style.display = 'block';
-      valid = false;
+    // Comparar solo año, mes y día
+    if (fecha.value) {
+      const fechaSeleccionada = new Date(fecha.value + 'T00:00:00');
+      const hoy = new Date();
+      hoy.setHours(0,0,0,0);
+      if (fechaSeleccionada < hoy) {
+        e.preventDefault();
+        fecha.style.borderColor = 'var(--error)';
+        document.getElementById('error-fecha').textContent = 'La fecha de vencimiento no puede ser anterior a hoy.';
+        document.getElementById('error-fecha').style.display = 'block';
+        valid = false;
+      }
     }
 
     if (valid) {
