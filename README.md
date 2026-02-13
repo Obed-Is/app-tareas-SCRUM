@@ -21,4 +21,3 @@ Si definieron contraseña a la base de datos cambiarla en el archivo "config.php
   $password = '';
 ```
 
-Luego se registran y ya deberia funcionar el proyecto
